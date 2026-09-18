@@ -121,7 +121,6 @@ function AsignaturasPage() {
                           e.preventDefault();
                           if (!draft.trim()) return;
                           addTask({
-                            id: uid(),
                             subjectId: s.id,
                             title: draft.trim(),
                             date: todayISO(),
