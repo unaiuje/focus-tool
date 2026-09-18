@@ -14,9 +14,9 @@ export interface Task {
   date: string;
   kind: TaskKind;
   done: boolean;
-  auto?: boolean;
-  examId?: string;
-  result?: "facil" | "regular" | "mal";
+  auto?: boolean | undefined;
+  examId?: string | undefined;
+  result?: "facil" | "regular" | "mal" | undefined;
 }
 
 export interface Exam {
@@ -26,7 +26,7 @@ export interface Exam {
   /** ISO day */
   date: string;
   topics: string;
-  grade?: number;
+  grade?: number | undefined;
 }
 
 export interface Extra {
@@ -42,7 +42,7 @@ export interface SessionLog {
   id: string;
   /** ISO day */
   date: string;
-  subjectId?: string;
+  subjectId?: string | undefined;
   minutes: number;
 }
 
