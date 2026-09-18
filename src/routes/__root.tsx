@@ -77,11 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Mi Curso 4º ESO — tu organizador de estudio" },
+      {
+        name: "description",
+        content:
+          "Organizador diario de estudio para 4º de la ESO: qué toca hoy, Pomodoro, repasos automáticos y notas.",
+      },
+      { property: "og:title", content: "Mi Curso 4º ESO — tu organizador de estudio" },
+      {
+        property: "og:description",
+        content:
+          "Qué toca hoy, temporizador Pomodoro, repasos antes de cada examen y seguimiento de notas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
