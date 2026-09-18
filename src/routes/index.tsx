@@ -21,7 +21,6 @@ import {
   currentStreak,
   tasksForDay,
   todayISO,
-  uid,
 } from "@/lib/study-utils";
 import type { Task } from "@/lib/study-types";
 
