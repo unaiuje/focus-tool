@@ -21,7 +21,6 @@ import {
   currentStreak,
   tasksForDay,
   todayISO,
-  uid,
 } from "@/lib/study-utils";
 import type { Task } from "@/lib/study-types";
 
@@ -204,7 +203,6 @@ function HoyPage() {
               e.preventDefault();
               if (!newTitle.trim()) return;
               addTask({
-                id: uid(),
                 subjectId: newSubject,
                 title: newTitle.trim(),
                 date: today,

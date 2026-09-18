@@ -8,7 +8,7 @@ import { TaskRow } from "@/components/TaskRow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStudyStore, addTask, setExamGrade } from "@/lib/study-store";
-import { todayISO, uid } from "@/lib/study-utils";
+import { todayISO } from "@/lib/study-utils";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/asignaturas")({
@@ -121,7 +121,6 @@ function AsignaturasPage() {
                           e.preventDefault();
                           if (!draft.trim()) return;
                           addTask({
-                            id: uid(),
                             subjectId: s.id,
                             title: draft.trim(),
                             date: todayISO(),

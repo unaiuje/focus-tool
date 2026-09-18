@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AsignaturasRouteImport } from './routes/asignaturas'
+import { Route as CalendarioRouteImport } from './routes/calendario'
+import { Route as ProgresoRouteImport } from './routes/progreso'
 import { Route as SemanaRouteImport } from './routes/semana'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +25,16 @@ const AsignaturasRoute = AsignaturasRouteImport.update({
   path: '/asignaturas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalendarioRoute = CalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgresoRoute = ProgresoRouteImport.update({
+  id: '/progreso',
+  path: '/progreso',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SemanaRoute = SemanaRouteImport.update({
   id: '/semana',
   path: '/semana',
@@ -32,30 +44,39 @@ const SemanaRoute = SemanaRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/asignaturas': typeof AsignaturasRoute
+  '/calendario': typeof CalendarioRoute
+  '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/asignaturas': typeof AsignaturasRoute
+  '/calendario': typeof CalendarioRoute
+  '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/asignaturas': typeof AsignaturasRoute
+  '/calendario': typeof CalendarioRoute
+  '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/asignaturas' | '/semana'
+  fullPaths: '/' | '/asignaturas' | '/calendario' | '/progreso' | '/semana'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/asignaturas' | '/semana'
-  id: '__root__' | '/' | '/asignaturas' | '/semana'
+  to: '/' | '/asignaturas' | '/calendario' | '/progreso' | '/semana'
+  id:
+    '__root__' | '/' | '/asignaturas' | '/calendario' | '/progreso' | '/semana'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AsignaturasRoute: typeof AsignaturasRoute
+  CalendarioRoute: typeof CalendarioRoute
+  ProgresoRoute: typeof ProgresoRoute
   SemanaRoute: typeof SemanaRoute
 }
 
@@ -75,6 +96,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AsignaturasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calendario': {
+      id: '/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof CalendarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progreso': {
+      id: '/progreso'
+      path: '/progreso'
+      fullPath: '/progreso'
+      preLoaderRoute: typeof ProgresoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/semana': {
       id: '/semana'
       path: '/semana'
@@ -88,6 +123,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AsignaturasRoute: AsignaturasRoute,
+  CalendarioRoute: CalendarioRoute,
+  ProgresoRoute: ProgresoRoute,
   SemanaRoute: SemanaRoute,
 }
 export const routeTree = rootRouteImport
