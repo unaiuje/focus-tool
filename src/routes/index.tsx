@@ -204,7 +204,6 @@ function HoyPage() {
               e.preventDefault();
               if (!newTitle.trim()) return;
               addTask({
-                id: uid(),
                 subjectId: newSubject,
                 title: newTitle.trim(),
                 date: today,
