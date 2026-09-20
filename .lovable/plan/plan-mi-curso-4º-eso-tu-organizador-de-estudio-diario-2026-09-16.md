@@ -19,7 +19,7 @@ Una app web en español, simple y directa, pensada para usarse 10-15 minutos al 
 ## Otras pantallas
 
 - **Asignaturas**: tus 11 asignaturas (Mates, Castellano, Catalán, Sociales, Inglés, Tecno, Economía, Filosofía, Ética, Ed. Física) con color propio. En cada una: temas, tareas y notas de exámenes.
-- **Calendario de exámenes**: añades fecha + temas; la app genera sola el plan de repaso espaciado los días previos. 
+- **Calendario de exámenes**: añades fecha + temas; la app genera sola el plan de repaso espaciado los días previos.
 - RECORDATORIO QUE TAMBIEN TENGO EXTRAESCOLARES
 - **Notas y progreso**: registras la nota de cada examen y ves gráficas por asignatura (visual con datos, como pediste): evolución de notas, tiempo de estudio por semana, asignaturas que más atención necesitan.
 - **Plan semanal**: vista de la semana para repartir carga y no saturar días.

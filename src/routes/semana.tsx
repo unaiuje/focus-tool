@@ -4,7 +4,7 @@ import { es } from "date-fns/locale";
 import { AppLayout } from "@/components/AppLayout";
 import { TaskRow } from "@/components/TaskRow";
 import { useStudyStore } from "@/lib/study-store";
-import { tasksForDay } from "@/lib/study-utils";
+import { slotsForWeekday, tasksForDay } from "@/lib/study-utils";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/semana")({
@@ -19,8 +19,7 @@ export const Route = createFileRoute("/semana")({
       { property: "og:title", content: "Plan semanal — Mi Curso 4º ESO" },
       {
         property: "og:description",
-        content:
-          "Reparte la carga de estudio por días y evita hacerlo todo el último día.",
+        content: "Reparte la carga de estudio por días y evita hacerlo todo el último día.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -38,12 +37,9 @@ function SemanaPage() {
     <AppLayout>
       <div className="space-y-5">
         <div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">
-            Tu semana
-          </h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">Tu semana</h1>
           <p className="text-sm text-muted-foreground">
-            Así está repartida la carga. Si un día va muy lleno, avisa y lo
-            movemos.
+            Así está repartida la carga. Si un día va muy lleno, avisa y lo movemos.
           </p>
         </div>
 
@@ -51,9 +47,29 @@ function SemanaPage() {
           {days.map((day) => {
             const iso = format(day, "yyyy-MM-dd");
             const dayTasks = tasksForDay(state, iso);
-            const extras = state.extras.filter(
-              (e) => e.weekday === day.getDay(),
-            );
+            // Agenda fija del día: clases con su color + extraescolares
+            const clases = slotsForWeekday(state.schedule, day.getDay()).map((s) => {
+              const subject = state.subjects.find((x) => x.id === s.subjectId);
+              return {
+                id: s.id,
+                start: s.startTime,
+                end: s.endTime,
+                label: subject?.name ?? "Clase",
+                color: subject?.color,
+                kind: "clase" as const,
+              };
+            });
+            const extras = state.extras
+              .filter((e) => e.weekdays.includes(day.getDay()))
+              .map((e) => ({
+                id: e.id,
+                start: e.startTime,
+                end: e.endTime,
+                label: e.name,
+                color: undefined,
+                kind: "extra" as const,
+              }));
+            const agenda = [...clases, ...extras].sort((a, b) => a.start.localeCompare(b.start));
             const isToday = isSameDay(day, new Date());
             return (
               <section
@@ -67,33 +83,43 @@ function SemanaPage() {
                   <h2 className="font-heading font-semibold capitalize">
                     {format(day, "EEEE", { locale: es })}
                     {isToday && (
-                      <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                      <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
                         HOY
                       </span>
                     )}
                   </h2>
-                  <span className="text-xs text-muted-foreground">
-                    {format(day, "d/M")}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{format(day, "d/M")}</span>
                 </header>
 
-                {extras.length > 0 && (
+                {agenda.length > 0 && (
                   <ul className="mb-2 space-y-1">
-                    {extras.map((e) => (
+                    {agenda.map((a) => (
                       <li
-                        key={e.id}
-                        className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+                        key={`${a.kind}-${a.id}`}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs",
+                          a.kind === "clase"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-secondary text-secondary-foreground",
+                        )}
                       >
-                        {e.name} · {e.startTime}–{e.endTime}
+                        {a.kind === "clase" && a.color && (
+                          <span
+                            className="size-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: a.color }}
+                          />
+                        )}
+                        <span className="truncate">{a.label}</span>
+                        <span className="ml-auto shrink-0 tabular-nums opacity-70">
+                          {a.start}–{a.end}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 )}
 
                 {dayTasks.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Día libre de tareas
-                  </p>
+                  <p className="text-xs text-muted-foreground">Día libre de tareas</p>
                 ) : (
                   <div className="space-y-1.5">
                     {dayTasks.map((t) => (

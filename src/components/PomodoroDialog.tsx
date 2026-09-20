@@ -10,26 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Task } from "@/lib/study-types";
 import { logSession, setTaskResult } from "@/lib/study-store";
+import { beep } from "@/lib/beep";
 
 const FOCUS_MIN = 25;
 const BREAK_MIN = 5;
-
-function beep() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.4);
-    setTimeout(() => ctx.close(), 600);
-  } catch {
-    // sin audio disponible
-  }
-}
 
 export function PomodoroDialog({
   task,
@@ -111,10 +95,8 @@ export function PomodoroDialog({
             {phase === "done" && "¡Pomodoro completado!"}
           </DialogTitle>
           <DialogDescription>
-            {phase === "focus" &&
-              (task ? task.title : "Concéntrate en una sola cosa.")}
-            {phase === "break" &&
-              "Levántate, estira, mira lejos de la pantalla."}
+            {phase === "focus" && (task ? task.title : "Concéntrate en una sola cosa.")}
+            {phase === "break" && "Levántate, estira, mira lejos de la pantalla."}
             {phase === "done" && "¿Qué tal ha ido? Sé honesto, es para ti."}
           </DialogDescription>
         </DialogHeader>
@@ -140,9 +122,7 @@ export function PomodoroDialog({
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() =>
-                  setSecondsLeft((phase === "focus" ? FOCUS_MIN : BREAK_MIN) * 60)
-                }
+                onClick={() => setSecondsLeft((phase === "focus" ? FOCUS_MIN : BREAK_MIN) * 60)}
                 aria-label="Reiniciar"
               >
                 <RotateCcw />

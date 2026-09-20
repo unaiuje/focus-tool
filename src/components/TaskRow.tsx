@@ -11,13 +11,7 @@ const KIND_LABEL: Record<Task["kind"], string> = {
   tarea: "Tarea",
 };
 
-export function SubjectDot({
-  state,
-  subjectId,
-}: {
-  state: StudyState;
-  subjectId: string;
-}) {
+export function SubjectDot({ state, subjectId }: { state: StudyState; subjectId: string }) {
   const subject = state.subjects.find((s) => s.id === subjectId);
   return (
     <span
@@ -46,7 +40,7 @@ export function TaskRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5",
+        "flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-card px-3 py-2.5",
         task.done && "opacity-55",
       )}
     >
@@ -54,53 +48,42 @@ export function TaskRow({
         onClick={() => toggleTask(task.id)}
         aria-label={task.done ? "Marcar pendiente" : "Marcar hecha"}
         className={cn(
-          "flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+          // size-7 visual + after:-inset-2: área táctil de ~44px sin mover el layout
+          "relative flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors after:absolute after:-inset-2 after:content-['']",
           task.done
             ? "border-primary bg-primary text-primary-foreground"
             : "border-muted-foreground/40 hover:border-primary",
         )}
       >
-        {task.done && <Check className="size-3" />}
+        {task.done && <Check className="size-4" />}
       </button>
       <SubjectDot state={state} subjectId={task.subjectId} />
-      <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "truncate text-sm font-medium",
-            task.done && "line-through",
-          )}
-        >
+      <div className="min-w-0 flex-1 basis-40">
+        <p className={cn("truncate text-sm font-medium", task.done && "line-through")}>
           {task.title}
         </p>
-        <p className="text-xs text-muted-foreground">
-          {subjectName(state, task.subjectId)}
-        </p>
+        <p className="text-xs text-muted-foreground">{subjectName(state, task.subjectId)}</p>
       </div>
-      <Badge variant="secondary" className="shrink-0">
-        {KIND_LABEL[task.kind]}
-      </Badge>
-      {!task.done && onStart && (
-        <Button
-          size="sm"
-          variant="default"
-          onClick={() => onStart(task)}
-          className="shrink-0"
-        >
-          <Play className="size-3.5" />
-          Empezar
-        </Button>
-      )}
-      {showDelete && (
-        <Button
-          size="icon"
-          variant="ghost"
-          className="size-7 shrink-0 text-muted-foreground"
-          onClick={() => removeTask(task.id)}
-          aria-label="Eliminar tarea"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      )}
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <Badge variant="secondary">{KIND_LABEL[task.kind]}</Badge>
+        {!task.done && onStart && (
+          <Button size="sm" variant="default" onClick={() => onStart(task)}>
+            <Play className="size-3.5" />
+            Empezar
+          </Button>
+        )}
+        {showDelete && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => removeTask(task.id)}
+            aria-label="Eliminar tarea"
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AsignaturasRouteImport } from './routes/asignaturas'
 import { Route as CalendarioRouteImport } from './routes/calendario'
+import { Route as HorarioRouteImport } from './routes/horario'
 import { Route as ProgresoRouteImport } from './routes/progreso'
 import { Route as SemanaRouteImport } from './routes/semana'
+import { Route as TarjetasRouteImport } from './routes/tarjetas'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -30,6 +32,11 @@ const CalendarioRoute = CalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HorarioRoute = HorarioRouteImport.update({
+  id: '/horario',
+  path: '/horario',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgresoRoute = ProgresoRouteImport.update({
   id: '/progreso',
   path: '/progreso',
@@ -40,44 +47,78 @@ const SemanaRoute = SemanaRouteImport.update({
   path: '/semana',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TarjetasRoute = TarjetasRouteImport.update({
+  id: '/tarjetas',
+  path: '/tarjetas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/asignaturas': typeof AsignaturasRoute
   '/calendario': typeof CalendarioRoute
+  '/horario': typeof HorarioRoute
   '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
+  '/tarjetas': typeof TarjetasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/asignaturas': typeof AsignaturasRoute
   '/calendario': typeof CalendarioRoute
+  '/horario': typeof HorarioRoute
   '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
+  '/tarjetas': typeof TarjetasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/asignaturas': typeof AsignaturasRoute
   '/calendario': typeof CalendarioRoute
+  '/horario': typeof HorarioRoute
   '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
+  '/tarjetas': typeof TarjetasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/asignaturas' | '/calendario' | '/progreso' | '/semana'
+  fullPaths:
+    | '/'
+    | '/asignaturas'
+    | '/calendario'
+    | '/horario'
+    | '/progreso'
+    | '/semana'
+    | '/tarjetas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/asignaturas' | '/calendario' | '/progreso' | '/semana'
+  to:
+    | '/'
+    | '/asignaturas'
+    | '/calendario'
+    | '/horario'
+    | '/progreso'
+    | '/semana'
+    | '/tarjetas'
   id:
-    '__root__' | '/' | '/asignaturas' | '/calendario' | '/progreso' | '/semana'
+    | '__root__'
+    | '/'
+    | '/asignaturas'
+    | '/calendario'
+    | '/horario'
+    | '/progreso'
+    | '/semana'
+    | '/tarjetas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AsignaturasRoute: typeof AsignaturasRoute
   CalendarioRoute: typeof CalendarioRoute
+  HorarioRoute: typeof HorarioRoute
   ProgresoRoute: typeof ProgresoRoute
   SemanaRoute: typeof SemanaRoute
+  TarjetasRoute: typeof TarjetasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -103,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalendarioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/horario': {
+      id: '/horario'
+      path: '/horario'
+      fullPath: '/horario'
+      preLoaderRoute: typeof HorarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/progreso': {
       id: '/progreso'
       path: '/progreso'
@@ -117,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SemanaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tarjetas': {
+      id: '/tarjetas'
+      path: '/tarjetas'
+      fullPath: '/tarjetas'
+      preLoaderRoute: typeof TarjetasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -124,8 +179,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AsignaturasRoute: AsignaturasRoute,
   CalendarioRoute: CalendarioRoute,
+  HorarioRoute: HorarioRoute,
   ProgresoRoute: ProgresoRoute,
   SemanaRoute: SemanaRoute,
+  TarjetasRoute: TarjetasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
