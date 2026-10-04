@@ -527,9 +527,9 @@ export interface BusyBlock {
   label: string;
 }
 
-/** Clases + extraescolares de hoy, ordenados por hora de inicio. */
-export function busyIntervalsToday(state: StudyState, now = new Date()): BusyBlock[] {
-  const weekday = now.getDay();
+/** Clases + extraescolares de un día concreto, ordenados por hora de inicio. */
+export function busyIntervalsForDay(state: StudyState, dateISO: string): BusyBlock[] {
+  const weekday = parseISO(dateISO).getDay();
   const blocks: BusyBlock[] = [];
   for (const slot of slotsForWeekday(state.schedule, weekday)) {
     const subject = state.subjects.find((s) => s.id === slot.subjectId);
@@ -546,6 +546,11 @@ export function busyIntervalsToday(state: StudyState, now = new Date()): BusyBlo
   return blocks.sort((a, b) => a.start.localeCompare(b.start));
 }
 
+/** Clases + extraescolares de hoy, ordenados por hora de inicio. */
+export function busyIntervalsToday(state: StudyState, now = new Date()): BusyBlock[] {
+  return busyIntervalsForDay(state, format(now, "yyyy-MM-dd"));
+}
+
 /** La clase o extraescolar que está ocurriendo ahora mismo, si la hay. */
 export function activeBlockNow(state: StudyState, now = new Date()): BusyBlock | null {
   const hhmm = format(now, "HH:mm");
@@ -554,21 +559,25 @@ export function activeBlockNow(state: StudyState, now = new Date()): BusyBlock |
 
 /** Fin de la jornada de estudio: pasado esto no se sugiere estudiar. */
 export const DAY_END = "21:30";
+/** Inicio de la jornada para días que no son hoy (la rejilla semanal). */
+export const DAY_START = "08:00";
 /** Hueco mínimo para que merezca la pena un pomodoro + descanso. */
 export const MIN_STUDY_WINDOW_MIN = 45;
 /** No sugerir maratones: la franja sugerida se recorta a esto. */
 export const MAX_SUGGESTED_MIN = 120;
 
-/** Huecos libres de hoy desde ahora hasta DAY_END. */
-export function freeWindowsToday(
+/** Huecos libres de un día entre el inicio de jornada (o ahora, si es hoy) y DAY_END. */
+export function freeWindowsForDay(
   state: StudyState,
-  now = new Date(),
-  dayEnd = DAY_END,
+  dateISO: string,
+  now: Date = new Date(),
+  dayEnd: string = DAY_END,
 ): { start: string; end: string; minutes: number }[] {
   const endM = hhmmToMinutes(dayEnd);
-  let cursor = now.getHours() * 60 + now.getMinutes();
+  const isToday = dateISO === format(now, "yyyy-MM-dd");
+  let cursor = isToday ? now.getHours() * 60 + now.getMinutes() : hhmmToMinutes(DAY_START);
   const windows: { start: number; end: number }[] = [];
-  for (const b of busyIntervalsToday(state, now)) {
+  for (const b of busyIntervalsForDay(state, dateISO)) {
     const startM = hhmmToMinutes(b.start);
     const endBlock = hhmmToMinutes(b.end);
     if (endBlock <= cursor) continue; // ya pasó
@@ -586,6 +595,15 @@ export function freeWindowsToday(
       end: minutesToHHmm(w.end),
       minutes: w.end - w.start,
     }));
+}
+
+/** Huecos libres de hoy desde ahora hasta DAY_END. */
+export function freeWindowsToday(
+  state: StudyState,
+  now = new Date(),
+  dayEnd = DAY_END,
+): { start: string; end: string; minutes: number }[] {
+  return freeWindowsForDay(state, format(now, "yyyy-MM-dd"), now, dayEnd);
 }
 
 /**

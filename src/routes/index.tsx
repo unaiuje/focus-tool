@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { addDays, format } from "date-fns";
+import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Flame, Lightbulb, Plus, Sparkles, Backpack } from "lucide-react";
+import { Backpack, Lightbulb, Play, Plus } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PomodoroDialog } from "@/components/PomodoroDialog";
 import { TaskRow } from "@/components/TaskRow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -19,10 +18,11 @@ import {
 import { useStudyStore, addTask, completeChecklistToday } from "@/lib/study-store";
 import {
   bestStudyWindow,
-  busyIntervalsToday,
-  currentStreak,
+  busyIntervalsForDay,
   daysToTermEnd,
   dueCardsToday,
+  freeWindowsForDay,
+  hhmmToMinutes,
   tasksForDay,
   todayISO,
 } from "@/lib/study-utils";
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Tu plan de estudio de hoy: tareas ordenadas por prioridad, temporizador Pomodoro y racha diaria para sacar la máxima nota en 4º de la ESO.",
+          "Tu día completo: clases, extraescolares, huecos para estudiar y tareas ordenadas por prioridad.",
       },
       { property: "og:title", content: "Hoy toca — Mi Curso 4º ESO" },
       {
@@ -52,9 +52,17 @@ export const Route = createFileRoute("/")({
   component: HoyPage,
 });
 
+type FilaDia = {
+  start: string;
+  end: string;
+  kind: "clase" | "extra" | "estudio";
+  label: string;
+};
+
 function HoyPage() {
   const state = useStudyStore();
   const [pomodoroTask, setPomodoroTask] = useState<Task | null>(null);
+  const [pomodoroOpen, setPomodoroOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newSubject, setNewSubject] = useState<string | null>(null);
 
@@ -62,14 +70,11 @@ function HoyPage() {
   const tasks = tasksForDay(state, today);
   const pending = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
-  const streak = currentStreak(state);
 
   // Se refresca cada minuto: la marca "Ahora" y la franja sugerida no se
   // quedan congeladas si la pestaña queda abierta.
   const now = useNow();
-  const busyHoy = busyIntervalsToday(state, now);
   const nowHHmm = format(now, "HH:mm");
-  const actual = busyHoy.find((b) => b.start <= nowHHmm && nowHHmm < b.end);
   const franja = bestStudyWindow(state, now);
   const tieneFijos = state.schedule.length > 0 || state.extras.length > 0;
   const tarjetasPendientes = dueCardsToday(state);
@@ -86,16 +91,32 @@ function HoyPage() {
     [state.exams, today],
   );
 
-  // Progreso de la semana: % de tareas hechas de los últimos 7 días
-  const weekPct = useMemo(() => {
-    const days = Array.from({ length: 7 }, (_, i) => format(addDays(now, -i), "yyyy-MM-dd"));
-    const weekTasks = state.tasks.filter((t) => days.includes(t.date));
-    if (!weekTasks.length) return 0;
-    return Math.round((weekTasks.filter((t) => t.done).length / weekTasks.length) * 100);
+  // Timeline del día: clases + extraescolares + huecos de estudio, por orden horario
+  const filasDia = useMemo<FilaDia[]>(() => {
+    const filas: FilaDia[] = [
+      ...busyIntervalsForDay(state, today).map((b) => ({
+        start: b.start,
+        end: b.end,
+        kind: b.kind,
+        label: b.label,
+      })),
+      ...freeWindowsForDay(state, today, now).map((w) => ({
+        start: w.start,
+        end: w.end,
+        kind: "estudio" as const,
+        label: "Franja para estudiar",
+      })),
+    ];
+    return filas.sort((a, b) => hhmmToMinutes(a.start) - hhmmToMinutes(b.start));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.tasks]);
+  }, [state, today, now.getHours(), now.getMinutes()]);
 
   const firstTask = pending[0];
+
+  const abrirPomodoro = (task: Task | null) => {
+    setPomodoroTask(task);
+    setPomodoroOpen(true);
+  };
 
   return (
     <AppLayout>
@@ -113,81 +134,110 @@ function HoyPage() {
           <h1 className="font-heading text-3xl font-bold tracking-tight">Hoy toca</h1>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Flame className="size-4 text-primary" /> Racha
-            </div>
-            <p className="mt-1 font-heading text-2xl font-bold">
-              {streak} {streak === 1 ? "día" : "días"}
-            </p>
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Sparkles className="size-4 text-primary" /> Semana
-            </div>
-            <p className="mt-1 font-heading text-2xl font-bold">{weekPct}%</p>
-            <Progress value={weekPct} className="mt-2 h-1.5" />
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Backpack className="size-4 text-primary" /> Próximo examen
-            </div>
-            {nextExam ? (
-              <>
-                <p className="mt-1 truncate font-heading text-lg font-bold">{nextExam.title}</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {format(new Date(nextExam.date + "T12:00"), "EEEE d/M", {
-                    locale: es,
-                  })}
-                </p>
-              </>
-            ) : (
-              <p className="mt-1 text-sm text-muted-foreground">Ninguno a la vista</p>
-            )}
-          </div>
-        </div>
+        {/* Próximo examen: banner compacto */}
+        {nextExam && (
+          <Link
+            to="/calendario"
+            className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm transition-colors hover:bg-accent"
+          >
+            <Backpack className="size-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1 truncate font-medium">{nextExam.title}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {(() => {
+                const d = differenceInCalendarDays(parseISO(nextExam.date), now);
+                return d === 0 ? "¡Hoy!" : `En ${d} día${d === 1 ? "" : "s"}`;
+              })()}
+            </span>
+          </Link>
+        )}
 
-        {!tieneFijos ? (
-          <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-            Añade tus{" "}
-            <Link
-              to="/horario"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-            >
-              clases y extraescolares
-            </Link>{" "}
-            y el plan respetará tus horas.
-          </div>
-        ) : (
-          busyHoy.length > 0 && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <p className="text-sm font-semibold">Tu día fijo</p>
-              <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
-                {busyHoy.map((b, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span className="tabular-nums">
-                      {b.start}–{b.end}
+        {/* Timeline del día: clases, extraescolares y huecos para estudiar */}
+        <section className="rounded-xl border bg-card p-4">
+          <p className="text-sm font-semibold">Tu día</p>
+          {filasDia.length === 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Día sin horario fijo. Añade tus{" "}
+              <Link
+                to="/ajustes"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                clases y extraescolares
+              </Link>{" "}
+              y aquí verás tu jornada entera.
+            </p>
+          ) : (
+            <ul className="mt-1 space-y-1">
+              {filasDia.map((f, i) => {
+                const esAhora = f.start <= nowHHmm && nowHHmm < f.end;
+                return (
+                  <li
+                    key={i}
+                    className={cn(
+                      "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg px-2 py-1.5 text-sm",
+                      esAhora && "bg-primary/5",
+                    )}
+                  >
+                    <span className="w-24 shrink-0 tabular-nums text-muted-foreground">
+                      {f.start}–{f.end}
                     </span>
-                    <span>{b.label}</span>
-                    {b.kind === "extra" && <span className="text-xs">(extraescolar)</span>}
-                    {b === actual && (
+                    {f.kind === "estudio" ? (
+                      <>
+                        <span className="min-w-0 flex-1 italic text-muted-foreground">
+                          {f.label}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => abrirPomodoro(null)}
+                          aria-label="Empezar pomodoro en esta franja"
+                        >
+                          <Play className="size-3.5" />
+                          Pomodoro
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className="mr-1.5 inline-block size-2 rounded-full align-middle"
+                          style={{
+                            backgroundColor: f.kind === "extra" ? "#a855f7" : "#94a3b8",
+                          }}
+                        />
+                        {f.label}
+                        {f.kind === "extra" && (
+                          <span className="text-xs text-muted-foreground"> (extraescolar)</span>
+                        )}
+                      </span>
+                    )}
+                    {esAhora && (
                       <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
                         AHORA
                       </span>
                     )}
                   </li>
-                ))}
-              </ul>
-            </div>
-          )
-        )}
+                );
+              })}
+            </ul>
+          )}
+          {!tieneFijos && filasDia.length > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Añade tus{" "}
+              <Link
+                to="/ajustes"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                clases y extraescolares
+              </Link>{" "}
+              para que el plan respete tus horas.
+            </p>
+          )}
+        </section>
 
         {(tarjetasPendientes.length > 0 || esDomingo) && (
           <div className="flex flex-wrap gap-2">
             {tarjetasPendientes.length > 0 && (
               <Link
-                to="/tarjetas"
+                to="/estudio"
                 className="flex-1 rounded-xl border bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-accent"
               >
                 {tarjetasPendientes.length} tarjeta
@@ -229,7 +279,7 @@ function HoyPage() {
             <Button
               size="lg"
               className="mt-4 w-full sm:w-auto"
-              onClick={() => setPomodoroTask(firstTask)}
+              onClick={() => abrirPomodoro(firstTask)}
             >
               Empezar Pomodoro de 25 min
             </Button>
@@ -250,7 +300,12 @@ function HoyPage() {
           ) : (
             <div className="space-y-2">
               {tasks.map((t) => (
-                <TaskRow key={t.id} task={t} state={state} onStart={setPomodoroTask} />
+                <TaskRow
+                  key={t.id}
+                  task={t}
+                  state={state}
+                  onStart={(task) => abrirPomodoro(task)}
+                />
               ))}
             </div>
           )}
@@ -298,8 +353,8 @@ function HoyPage() {
 
       <PomodoroDialog
         task={pomodoroTask}
-        open={pomodoroTask !== null}
-        onClose={() => setPomodoroTask(null)}
+        open={pomodoroOpen}
+        onClose={() => setPomodoroOpen(false)}
       />
     </AppLayout>
   );

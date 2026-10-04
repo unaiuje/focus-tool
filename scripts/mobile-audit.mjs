@@ -36,8 +36,8 @@ const ROUTES = [
   "/semana",
   "/asignaturas",
   "/calendario",
-  "/tarjetas",
-  "/horario",
+  "/estudio",
+  "/ajustes",
   "/progreso",
 ];
 
@@ -422,7 +422,7 @@ async function main() {
         "SimulacroDialog",
       );
 
-      await page.goto(BASE_URL + "/tarjetas", { waitUntil: "networkidle", timeout: 60000 });
+      await page.goto(BASE_URL + "/estudio", { waitUntil: "networkidle", timeout: 60000 });
       await waitShell(page);
       try {
         await clickScrollSafe(page, page.getByRole("button", { name: /Empezar repaso/ }).first());

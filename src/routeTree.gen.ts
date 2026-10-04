@@ -10,8 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as AsignaturasRouteImport } from './routes/asignaturas'
 import { Route as CalendarioRouteImport } from './routes/calendario'
+import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as HorarioRouteImport } from './routes/horario'
 import { Route as ProgresoRouteImport } from './routes/progreso'
 import { Route as SemanaRouteImport } from './routes/semana'
@@ -22,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjustesRoute = AjustesRouteImport.update({
+  id: '/ajustes',
+  path: '/ajustes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AsignaturasRoute = AsignaturasRouteImport.update({
   id: '/asignaturas',
   path: '/asignaturas',
@@ -30,6 +37,11 @@ const AsignaturasRoute = AsignaturasRouteImport.update({
 const CalendarioRoute = CalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstudioRoute = EstudioRouteImport.update({
+  id: '/estudio',
+  path: '/estudio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HorarioRoute = HorarioRouteImport.update({
@@ -55,8 +67,10 @@ const TarjetasRoute = TarjetasRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRoute
   '/asignaturas': typeof AsignaturasRoute
   '/calendario': typeof CalendarioRoute
+  '/estudio': typeof EstudioRoute
   '/horario': typeof HorarioRoute
   '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
@@ -64,8 +78,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRoute
   '/asignaturas': typeof AsignaturasRoute
   '/calendario': typeof CalendarioRoute
+  '/estudio': typeof EstudioRoute
   '/horario': typeof HorarioRoute
   '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
@@ -74,8 +90,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRoute
   '/asignaturas': typeof AsignaturasRoute
   '/calendario': typeof CalendarioRoute
+  '/estudio': typeof EstudioRoute
   '/horario': typeof HorarioRoute
   '/progreso': typeof ProgresoRoute
   '/semana': typeof SemanaRoute
@@ -85,8 +103,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ajustes'
     | '/asignaturas'
     | '/calendario'
+    | '/estudio'
     | '/horario'
     | '/progreso'
     | '/semana'
@@ -94,8 +114,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ajustes'
     | '/asignaturas'
     | '/calendario'
+    | '/estudio'
     | '/horario'
     | '/progreso'
     | '/semana'
@@ -103,8 +125,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/ajustes'
     | '/asignaturas'
     | '/calendario'
+    | '/estudio'
     | '/horario'
     | '/progreso'
     | '/semana'
@@ -113,8 +137,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AjustesRoute: typeof AjustesRoute
   AsignaturasRoute: typeof AsignaturasRoute
   CalendarioRoute: typeof CalendarioRoute
+  EstudioRoute: typeof EstudioRoute
   HorarioRoute: typeof HorarioRoute
   ProgresoRoute: typeof ProgresoRoute
   SemanaRoute: typeof SemanaRoute
@@ -130,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajustes': {
+      id: '/ajustes'
+      path: '/ajustes'
+      fullPath: '/ajustes'
+      preLoaderRoute: typeof AjustesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/asignaturas': {
       id: '/asignaturas'
       path: '/asignaturas'
@@ -142,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/calendario'
       fullPath: '/calendario'
       preLoaderRoute: typeof CalendarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estudio': {
+      id: '/estudio'
+      path: '/estudio'
+      fullPath: '/estudio'
+      preLoaderRoute: typeof EstudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/horario': {
@@ -177,8 +217,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AjustesRoute: AjustesRoute,
   AsignaturasRoute: AsignaturasRoute,
   CalendarioRoute: CalendarioRoute,
+  EstudioRoute: EstudioRoute,
   HorarioRoute: HorarioRoute,
   ProgresoRoute: ProgresoRoute,
   SemanaRoute: SemanaRoute,

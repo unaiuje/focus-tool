@@ -1,24 +1,14 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  addMonths,
-  differenceInCalendarDays,
-  endOfMonth,
-  format,
-  isSameDay,
-  isSameMonth,
-  parseISO,
-  startOfMonth,
-  startOfWeek,
-  addDays,
-} from "date-fns";
+import { addMonths, differenceInCalendarDays, format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus, Timer, Trash2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { MonthCalendar } from "@/components/MonthCalendar";
 import { SimulacroDialog } from "@/components/SimulacroDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useStudyStore, addExam, removeExam } from "@/lib/study-store";
+import { useStudyStore, addExam, removeExam, setExamGrade } from "@/lib/study-store";
 import { todayISO } from "@/lib/study-utils";
 import { selectClass } from "@/lib/ui";
 import type { Exam } from "@/lib/study-types";
@@ -30,7 +20,8 @@ export const Route = createFileRoute("/calendario")({
       { title: "Exámenes — Mi Curso 4º ESO" },
       {
         name: "description",
-        content: "Apunta tus exámenes y la app crea sola los repasos de los 7, 3 y 1 días antes.",
+        content:
+          "Un solo calendario con todos tus exámenes. Cuando pasa la fecha, apunta la nota ahí mismo.",
       },
       {
         property: "og:title",
@@ -38,7 +29,7 @@ export const Route = createFileRoute("/calendario")({
       },
       {
         property: "og:description",
-        content: "Calendario de exámenes con plan de repaso automático antes de cada uno.",
+        content: "Calendario de exámenes con plan de repaso automático y apunte de notas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -47,15 +38,14 @@ export const Route = createFileRoute("/calendario")({
   component: CalendarioPage,
 });
 
-const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-// Iniciales para la rejilla compacta del móvil
-const DIAS_INICIALES = ["L", "M", "X", "J", "V", "S", "D"];
-
 function CalendarioPage() {
   const state = useStudyStore();
-  const [mes, setMes] = useState(() => startOfMonth(new Date()));
+  const [mes, setMes] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
   const [simulacroExam, setSimulacroExam] = useState<Exam | null>(null);
-  // Día marcado en la rejilla compacta del móvil (solo lo usa el render md:hidden)
+  // Día marcado: alimenta la agenda bajo el calendario (visible en móvil)
   const [diaActivo, setDiaActivo] = useState(() => todayISO());
 
   const cambiarMes = (dir: 1 | -1) => {
@@ -65,13 +55,20 @@ function CalendarioPage() {
     setDiaActivo(format(nuevo, "yyyy-MM-dd"));
   };
 
-  const inicio = startOfWeek(startOfMonth(mes), { weekStartsOn: 1 });
-  const dias = Array.from({ length: 42 }, (_, i) => addDays(inicio, i));
-  const finMes = endOfMonth(mes);
-
+  const hoy = todayISO();
   const proximos = state.exams
-    .filter((e) => e.date >= todayISO())
+    .filter((e) => e.date >= hoy)
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Poner notas: pasados sin nota primero, luego las últimas puestas
+  const pasados = state.exams.filter((e) => e.date < hoy);
+  const sinNota = pasados
+    .filter((e) => e.grade === undefined)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const conNota = pasados
+    .filter((e) => e.grade !== undefined)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 12);
 
   const examsDiaActivo = state.exams
     .filter((e) => e.date === diaActivo)
@@ -84,11 +81,12 @@ function CalendarioPage() {
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight">Exámenes</h1>
           <p className="text-sm text-muted-foreground">
-            Apunta la fecha y yo te pongo los repasos 7, 3 y 1 día antes.
+            Apunta la fecha y yo te pongo los repasos 7, 3 y 1 día antes. Cuando pasa el examen,
+            apunta aquí la nota.
           </p>
         </div>
 
-        {/* Calendario */}
+        {/* El calendario: uno solo, con todo */}
         <section className="rounded-xl border bg-card p-4">
           <header className="mb-3 flex items-center justify-between">
             <Button
@@ -112,133 +110,45 @@ function CalendarioPage() {
             </Button>
           </header>
 
-          {/* Móvil: celdas compactas con puntos + agenda del día marcado */}
-          <div className="md:hidden">
-            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase text-muted-foreground">
-              {DIAS_INICIALES.map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-            <div className="mt-1 grid grid-cols-7 gap-1">
-              {dias.map((day) => {
-                const iso = format(day, "yyyy-MM-dd");
-                const exams = state.exams.filter((e) => e.date === iso);
-                const tareas = state.tasks.filter((t) => t.date === iso && !t.done);
-                const fuera = !isSameMonth(day, mes);
-                const esHoy = isSameDay(day, new Date());
-                const esActivo = iso === diaActivo;
-                return (
-                  <button
-                    key={iso}
-                    type="button"
-                    onClick={() => setDiaActivo(iso)}
-                    aria-pressed={esActivo}
-                    aria-label={`${format(day, "d 'de' MMMM", { locale: es })}${
-                      exams.length > 0 ? `: ${exams.map((e) => e.title).join(", ")}` : ""
-                    }`}
-                    className={cn(
-                      "flex aspect-square min-h-10 w-full flex-col items-center justify-center gap-1 rounded-lg border text-sm",
-                      fuera && "opacity-40",
-                      esActivo && "border-primary bg-primary/10",
-                      esHoy && !esActivo && "border-primary ring-1 ring-primary/30",
-                    )}
-                  >
-                    <span className={cn("text-xs", esHoy && "font-bold text-primary")}>
-                      {format(day, "d")}
-                    </span>
-                    <span className="flex h-1.5 items-center gap-0.5" aria-hidden>
-                      {exams.slice(0, 3).map((e) => (
-                        <span key={e.id} className="size-1.5 rounded-full bg-destructive" />
-                      ))}
-                      {exams.length === 0 &&
-                        tareas
-                          .slice(0, 3)
-                          .map((t) => (
-                            <span key={t.id} className="size-1.5 rounded-full bg-primary/60" />
-                          ))}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          <MonthCalendar
+            state={state}
+            month={mes}
+            selectedDay={diaActivo}
+            onSelectDay={setDiaActivo}
+          />
 
-            {/* Agenda del día marcado */}
-            <div className="mt-3 rounded-lg border bg-background p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {format(parseISO(diaActivo), "EEEE d 'de' MMMM", { locale: es })}
-              </p>
-              {examsDiaActivo.length === 0 && tareasDiaActivo === 0 ? (
-                <p className="mt-1 text-sm text-muted-foreground">Nada apuntado para este día.</p>
-              ) : (
-                <ul className="mt-2 space-y-2">
-                  {examsDiaActivo.map((e) => {
-                    const subject = state.subjects.find((s) => s.id === e.subjectId);
-                    return (
-                      <li key={e.id} className="flex items-center gap-2 text-sm">
-                        <span
-                          className="size-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: subject?.color ?? "#999" }}
-                        />
-                        <span className="min-w-0 flex-1 truncate font-medium">{e.title}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {subject?.name}
-                        </span>
-                      </li>
-                    );
-                  })}
-                  {tareasDiaActivo > 0 && (
-                    <li className="text-xs text-muted-foreground">
-                      {tareasDiaActivo} tarea{tareasDiaActivo > 1 ? "s" : ""} pendiente
-                      {tareasDiaActivo > 1 ? "s" : ""}
+          {/* Agenda del día marcado (útil sobre todo en móvil, celdas compactas) */}
+          <div className="mt-3 rounded-lg border bg-background p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {format(parseISO(diaActivo), "EEEE d 'de' MMMM", { locale: es })}
+            </p>
+            {examsDiaActivo.length === 0 && tareasDiaActivo === 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">Nada apuntado para este día.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {examsDiaActivo.map((e) => {
+                  const subject = state.subjects.find((s) => s.id === e.subjectId);
+                  return (
+                    <li key={e.id} className="flex items-center gap-2 text-sm">
+                      <span
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: subject?.color ?? "#999" }}
+                      />
+                      <span className="min-w-0 flex-1 truncate font-medium">{e.title}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {subject?.name}
+                      </span>
                     </li>
-                  )}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          {/* Escritorio: rejilla mensual completa con títulos de examen */}
-          <div className="hidden md:block">
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase text-muted-foreground">
-              {DIAS.map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-            <div className="mt-1 grid grid-cols-7 gap-1">
-              {dias.map((day) => {
-                const iso = format(day, "yyyy-MM-dd");
-                const exams = state.exams.filter((e) => e.date === iso);
-                const tareas = state.tasks.filter((t) => t.date === iso);
-                const fuera = !isSameMonth(day, mes) && day <= finMes === false;
-                return (
-                  <div
-                    key={iso}
-                    className={cn(
-                      "min-h-16 rounded-lg border p-1 text-left",
-                      !isSameMonth(day, mes) && "opacity-40",
-                      fuera && "opacity-40",
-                      isSameDay(day, new Date()) && "border-primary ring-1 ring-primary/30",
-                    )}
-                  >
-                    <span className="text-[11px] text-muted-foreground">{format(day, "d")}</span>
-                    {exams.map((e) => (
-                      <p
-                        key={e.id}
-                        className="mt-0.5 truncate rounded bg-destructive/10 px-1 text-[10px] font-semibold text-destructive"
-                        title={e.title}
-                      >
-                        {e.title}
-                      </p>
-                    ))}
-                    {tareas.length > 0 && exams.length === 0 && (
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {tareas.length} tarea{tareas.length > 1 ? "s" : ""}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+                {tareasDiaActivo > 0 && (
+                  <li className="text-xs text-muted-foreground">
+                    {tareasDiaActivo} tarea{tareasDiaActivo > 1 ? "s" : ""} pendiente
+                    {tareasDiaActivo > 1 ? "s" : ""}
+                  </li>
+                )}
+              </ul>
+            )}
           </div>
         </section>
 
@@ -315,6 +225,43 @@ function CalendarioPage() {
           )}
         </section>
 
+        {/* Poner notas: los exámenes que ya pasaron */}
+        <section className="space-y-3">
+          <h2 className="font-heading text-lg font-semibold">Poner notas</h2>
+          {sinNota.length === 0 && conNota.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Cuando pase un examen, aparecerá aquí para que apuntes la nota.
+            </p>
+          ) : (
+            <>
+              {sinNota.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Pendientes de nota
+                  </p>
+                  <ul className="space-y-1.5">
+                    {sinNota.map((e) => (
+                      <NotaRow key={e.id} exam={e} />
+                    ))}
+                  </ul>
+                </>
+              )}
+              {conNota.length > 0 && (
+                <>
+                  <p className="pt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Últimas notas
+                  </p>
+                  <ul className="space-y-1.5">
+                    {conNota.map((e) => (
+                      <NotaRow key={e.id} exam={e} />
+                    ))}
+                  </ul>
+                </>
+              )}
+            </>
+          )}
+        </section>
+
         <SimulacroDialog
           state={state}
           exam={simulacroExam}
@@ -323,6 +270,40 @@ function CalendarioPage() {
         />
       </div>
     </AppLayout>
+  );
+}
+
+/** Fila de examen pasado con su nota editable inline. */
+function NotaRow({ exam }: { exam: Exam }) {
+  const subject = useStudyStore().subjects.find((s) => s.id === exam.subjectId);
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-2 gap-y-2 rounded-lg border bg-card px-3 py-2 text-sm">
+      <span
+        className="size-2.5 shrink-0 rounded-full"
+        style={{ backgroundColor: subject?.color ?? "#999" }}
+      />
+      <span className="min-w-0 flex-1 basis-40">
+        <span className="font-medium">{exam.title}</span>
+        <span className="block text-xs text-muted-foreground capitalize">
+          {subject?.name} · {format(new Date(exam.date + "T12:00"), "d MMM yyyy", { locale: es })}
+        </span>
+      </span>
+      <Input
+        type="number"
+        step="0.5"
+        min="0"
+        max="10"
+        placeholder="Nota"
+        defaultValue={exam.grade ?? ""}
+        className="h-9 w-20 shrink-0"
+        aria-label={`Nota de ${exam.title}`}
+        onBlur={(ev) => {
+          const v = parseFloat(ev.target.value);
+          setExamGrade(exam.id, Number.isNaN(v) ? undefined : v);
+        }}
+      />
+    </li>
   );
 }
 
@@ -347,7 +328,7 @@ function NuevoExamen() {
       <h2 className="font-heading text-lg font-semibold">Añadir examen</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         <select
-          className={selectClass}
+          className={cn(selectClass)}
           value={subjectId}
           onChange={(e) => setSubjectId(e.target.value)}
           aria-label="Asignatura"
